@@ -1,0 +1,100 @@
+---
+title: "HW1"
+author: "Rishab Kulkarni"
+date: "9/5/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("tidyverse",repos = "http://cran.us.r-project.org")
+```
+
+## 1.
+
+```{r}
+library(tidyverse)
+data("prostate", package="faraway")
+summary(prostate)
+```
+```{r}
+hist(prostate$lcavol,main='log(cancer volume)')
+hist(prostate$lweight,main='log(prostate weight)')
+hist(prostate$age, main='age')
+hist(prostate$lbph, main='log(benign prostatic hyperplasia amount)')
+hist(prostate$svi, main='seminal vesicle invasion')
+hist(prostate$lcp, main='log(capsular penetration)')
+hist(prostate$gleason, main= 'Gleason score')
+hist(prostate$pgg45, main='percentage Gleason scores 4 or 5')
+hist(prostate$lpsa, main='log(prostate specific antigen)')
+```
+I find it interesting that the histogram for the Gleason scores are not
+normally distributed. Instead, they're skewed heavily to the right. 
+It's also interesting to note that the log(capsular penetration)
+histogram is heavily skewed right, whereas the log(prostate specific antigen)
+is nearly a perfect normal distribution. 
+
+
+![Question 2](/Users/rishabkulkarni/Downloads/Question2.pdf)
+
+## 4.
+
+```{r}
+playbill <- read_csv('Downloads/playbill.csv')
+model <- lm(CurrentWeek ~ LastWeek, data=playbill)
+summary(model)
+```
+The fitted model is in the form of y = b_0 + b_1(x) + e.
+Through our linear model summary, we have the y-intercept and the slope;
+thus, we have our fitted model values. The appropriate model is
+(0.9821)x + 6.805, where the response variable is the current week
+and the predictor variable is the previous or last week.
+
+## 4a.
+
+```{r}
+confint(model,level=0.95)
+```
+The 95% confidence interval for slope of the regression model is
+(0.9514971, 1.012666). 1 is a plausible value for b_1 since it falls 
+within the confidence interval.
+
+## 4b.
+
+```{r}
+2*(1-pt(0.3217846712,16))
+```
+The test statistic was drawn from (est.val - hypoth. val)/(Std. error)
+
+The pval drawn from the hypothesis test is 0.7517816,
+which is larger than our alpha level 0.05; thus, we reject
+the null hypothesis that b_0 = 10000.
+
+## 4c.
+
+```{r}
+6805 + (0.9821*400000)
+```
+The current week box office est. from $400,000 in gross box office
+in previous week is $399,645.
+
+```{r}
+predict(lm(CurrentWeek ~ LastWeek, data=playbill), newdata = data.frame(LastWeek=400000),interval= "prediction")
+```
+No, $450,000 is not a feasible value for the gross box office results
+in the current week, since it's not within the interval (359832.8, 439442.2)
+
+## 4d.
+
+This rule is inappropriate; it's not reflective of our fitted regression
+model which proves otherwise. There is a linear regression that models
+the current week's gross box office from that of the last week's, and
+it is not y = x.
+
+
+![Question 5](/Users/rishabkulkarni/Downloads/Question5.pdf)

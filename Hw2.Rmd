@@ -1,0 +1,220 @@
+---
+title: "Hw2"
+author: "Rishab Kulkarni"
+date: "9/20/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("tidyverse",repos="http://cran.us.r-project.org")
+install.packages("ellipse",repos="http://cran.us.r-project.org")
+install.packages("ggplot2",repos="http://cran.us.r-project.org")
+```
+
+## 1a.
+```{r}
+library(tidyverse)
+data("sat", package="faraway")
+fit <- lm(total ~ expend+ratio+salary,data = sat)
+summary(fit)
+```
+The p-val for the salary predictor is 0.0667, which is greater than our
+significance level of 0.05. Thus, we fail to reject the null hypothesis that
+the salary predictor is non-significant (b_salary = 0).
+
+The p-values for the expend, ratio, and salary predictor are all above our
+significance level of 0.05. Thus, we fail to reject the null hypothesis that 
+the expend, ratio, and salary predictors are non-significant.
+
+None of these predictor variables have an effect on the response, because they
+all have p-values greater than 0.05; thus, they are all statistically
+non-significant with no effect on the response, total.
+
+## 1b.
+```{r}
+fit_takers <- lm(total~expend+ratio+salary+takers, data = sat)
+summary(fit_takers)
+```
+The p-value for the takers predictor is 2.61e-16, which is less than our alpha
+level of 0.05; thus, we can reject the null hypothesis that the takers predictor
+is statistically non-significant (b_takers=0)
+
+```{r}
+anova(fit,fit_takers)
+```
+The linear model with the takers predictor is the preferred linear model because
+according to the F-test, the corresponding p-value is 2.607e-16, which is less
+than alpha level of 0.05; thus, we can reject the null hypothesis that Model 1
+fits our data better than Model 2.
+
+The F-test is equivalent to the t-test because the F-statistic is equal to 
+t-test^2. Also, we get the same p-value with both tests.
+
+## 2.
+```{r}
+data("prostate",package = "faraway")
+fit_prostate <- lm(lpsa~lcavol+lweight+age+lbph+svi+lcp+gleason+pgg45,data= prostate)
+summary(fit_prostate)
+```
+## 2a.
+```{r}
+-0.019637+ c(-1,1)*qt(0.95,88)*0.011173
+-0.019637+ c(-1,1)*qt(0.975,88)*0.011173
+```
+
+## 2b.
+```{r}
+data("prostate",package= "faraway")
+fit_significant <- lm(lpsa~lcavol+lweight+svi,data= prostate)
+summary(fit_significant)
+anova(fit_significant,fit_prostate)
+```
+Model 2 which contains all predictors is not the preferred model because its 
+p-value of 0.2167 is greater than our alpha level of 0.05; thus, we fail to
+reject the null hypothesis that Model 2 fits the data as well as Model 1. We 
+have ample evidence that suggests Model 1 (reduced model) is the better fit
+and preferred model.
+
+## 2c.
+```{r}
+library(ggplot2)
+library(ellipse)
+CR95 = ellipse(fit_prostate, c(4,5))
+CR99 = ellipse(fit_prostate, c(4,5), level=0.99)
+CR998 = ellipse(fit_prostate, c(4,5), level=0.998)
+myCR = rbind(CR95, CR99, CR998);
+myCR = data.frame(myCR); 
+names(myCR) = c("age","lbph"); 
+myCR[, 'level']=as.factor(c(rep(0.95, dim(CR95)[1]), 
+                              rep(0.99, dim(CR99)[1]), 
+                              rep(0.998, dim(CR998)[1])));
+
+ggplot(data=myCR, aes(x=age, y=lbph, colour=level)) + 
+  geom_path(aes(linetype=level), size=1.5) + 
+  geom_point(x=coef(fit_prostate)[2], y=coef(fit_prostate)[3], shape=3, size=3, colour='red') + 
+  geom_point(x=0, y=0, shape=1, size=3, colour='red') 
+
+```
+The null hypothesis is that age and lbph are insignificant predictors. In other
+words, their linear reg. coefficients are 0. The alternative hypothesis is that
+age and lbph are significant predictors and their linear reg. coefficients
+are not 0.
+
+The location of the origin (0,0) is within the 5% level elliptical region; thus,
+we fail to reject the null hypothesis that the predictors age and lbph are
+insignificant to the response. We have ample evidence that suggests age and lbph
+are insignificant predictors and their linear reg. coefficients are 0.
+
+## 2d.
+```{r}
+n.iter = 2000; 
+fstats = numeric(n.iter);
+for(i in 1:n.iter){
+    newprostate= prostate;
+    newprostate[,c(4,3)]=prostate[sample(97),c(4,3)];
+    lm = lm(lpsa ~., data= newprostate);
+    fstats[i] = summary(lm)$coef[4,3]
+}
+length(fstats[fstats > summary(fit_prostate)$fstat[1]])/n.iter
+```
+
+## 3a.
+```{r}
+data("punting", package="faraway")
+fit_punting <- lm(Distance~RStr+LStr+RFlex+LFlex,data=punting)
+summary(fit_punting)
+```
+None of the predictors are statistically significant at the 95% level. All
+their corresponding p-values are greater than our alpha level of 0.05.
+
+## 3b.
+```{r}
+fit_punting_collective <- lm(Distance~I(RStr+LStr+RFlex+LFlex),data=punting)
+anova(fit_punting_collective,fit_punting)
+```
+Collectively, these four predictors are significant at the alpha level 0.05.
+From the F-test, the p-value of Model 2 which fits the individual predictors
+is 0.5113 which is greater than 0.05. Thus, we fail to reject the null
+hypothesis that Model 2 fits the data as well as Model 1 does. We have enough
+evidence that suggests the four predictors collectively are significant at
+the 5% alpha level.
+
+## 3c.
+```{r}
+fit_punting_strength <- lm(Distance~I(RStr+LStr)+RFlex+LFlex,data=punting)
+anova(fit_punting_strength,fit_punting)
+```
+The p-value for the full model is 0.468, which is greater than our alpha level
+5%; thus, we fail to reject the null hypothesis that Model 2 (full model) is a 
+better fit than Model 1 (right and left leg strength as predictor). We have
+evidence that suggests Model 1 is a better fit and does not have the same effect
+as our full model.
+
+## 3d.
+```{r}
+library(ggplot2)
+library(ellipse)
+CR95 = ellipse(fit_punting, c(4,5))
+CR99 = ellipse(fit_punting, c(4,5), level=0.99)
+CR998 = ellipse(fit_punting, c(4,5), level=0.998)
+myCR = rbind(CR95, CR99, CR998);
+myCR = data.frame(myCR); 
+names(myCR) = c("RStr","LStr"); 
+myCR[, 'level']=as.factor(c(rep(0.95, dim(CR95)[1]), 
+                              rep(0.99, dim(CR99)[1]), 
+                              rep(0.998, dim(CR998)[1])));
+
+ggplot(data=myCR, aes(x=RStr, y=LStr, colour=level)) + 
+  geom_path(aes(linetype=level), size=1.5) + 
+  geom_point(x=coef(fit_punting)[2], y=coef(fit_punting)[3], shape=3, size=3, colour='red') + 
+  geom_point(x=0, y=0, shape=1, size=3, colour='red') 
+```
+The null hypothesis is that RStr and LStr are insignificant predictors. In other
+words, their linear reg. coefficients are 0. The alternative hypothesis is that
+RStr and LStr are significant predictors and their linear reg. coefficients
+are not 0.
+
+The location of the origin (0,0) is within the 5% level elliptical region; thus,
+we fail to reject the null hypothesis that the predictors RStr and LStr are
+insignificant to the response. We have evidence that suggests RStr and LStr are
+insignificant predictors and their linear reg. coefficients are 0.
+
+## 3e.
+```{r}
+fit_strength <- lm(Distance~RStr+LStr,data = punting)
+fit_total_str <- lm(Distance~I(RStr+LStr), data=punting)
+anova(fit_total_str,fit_strength)
+```
+The linear model that uses individual right and left leg strengths is not
+sufficient to predict the response, Distance. The p-value associated with this
+model is 0.5978, which is higher than our significance level 0.05. Thus, we fail
+to reject the null hypothesis that Model 2 improved the fit. We have ample
+evidence that suggests Model 1 (total leg strength) is a better fit.
+
+## 5a.
+```{r}
+new_patient = data.frame(lcavol=1.44692,lweight=3.62301,age=65,lbph=0.3001,svi=0,lcp=-0.79851,gleason=7,pgg45=15)
+predict(fit_prostate,newdata= new_patient,interval= "confidence")
+```
+
+## 5b.
+```{r}
+new_patient_age = data.frame(lcavol=1.44692,lweight=3.62301,age=20,lbph=0.3001,svi=0,lcp=-0.79851,gleason=7,pgg45=15)
+predict(fit_prostate,newdata= new_patient_age,interval = "confidence")
+```
+The CI is wider because the new age value of 20 is further fromthe mean. We are 
+moving away from the prostate data, so the CI will be wider.
+
+## 5c.
+```{r}
+predict(fit_significant,newdata= new_patient,interval="confidence")
+```
+The CI is narrower; I prefer these predictions because we are using significant
+predictors and thus, a better model fit. This better fit provides more accurate
+predictions of our response.
