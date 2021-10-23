@@ -1,0 +1,190 @@
+---
+title: "Hw3"
+author: "Rishab Kulkarni"
+date: "10/17/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(faraway)
+install.packages("dplyr",repos = "http://cran.us.r-project.org")
+install.packages("MASS",repos = "http://cran.us.r-project.org")
+```
+
+## 1.
+```{r}
+data("salmonella", package = "faraway")
+s <- lm(colonies ~ I(log(dose + 1)), data = salmonella)
+s_factor <- lm(colonies ~ 0 + as.factor(log(dose + 1)), data = salmonella)
+anova(s, s_factor) #lack-of-fit test
+```
+
+
+The p-value from the lack-of-fit test is 0.1342, which is greater than the alpha
+level 0.05. Therefore, we fail to reject the null hypothesis that there is no 
+lack of fit in the reduced model. We've sufficient evidence that suggests this
+model is useful with no lack of fit.
+
+## 2.
+```{r}
+library(MASS)
+data("gammaray", package = "faraway")
+i <- lm(flux ~ time, data = gammaray, weights = 1/error)
+summary(i)
+b <- boxcox(i)
+lambda <- b$x[which.max(b$y)]
+lambda
+i_bc <- lm(log(flux) ~ time, data = gammaray, weights = 1/error)
+summary(i_bc)
+i_bc_x <- lm(log(flux) ~ log(time), data = gammaray, weights = 1/error)
+summary(i_bc_x)
+plot(i_bc_x)
+```
+
+
+Upon plotting the linear model, we have a lack of linearity, normality, and
+constant variance. Therefore, transformations of both predictors and response
+are required to improve the regression model.
+
+First, let's transform the response with the Box-Cox power transformation.
+The optimal transformation is lambda = 0.0202. Rounded to the nearest half,
+the optimal transformation value is 0. This means log(y) may be an effective transformation on the model. Upon transforming y into log(y), our 
+R-squared increases from 0.03018 to 0.8278, so we keep this transformation.
+
+Now, we must transform our predictor values. A common tactic to increase the
+linearity in a model is log(x). Upon transforming the predictors to log(x), the
+R-squared increases from 0.8278 to 0.9827. Our transformations of the response 
+and predictors are sufficient.
+
+The residuals vs. fitted plots show no trend and the Q-Q plot shows normality
+in the model. These are other factors that show that our transformations of the
+response and predictors are adequate.
+
+## 3.
+```{r}
+data("longley", package = "faraway")
+l <- lm(Employed ~ ., data = longley) #lm
+summary(l)
+```
+
+## 3a.
+```{r}
+round(cor(longley[, -7]), dig=4)
+```
+
+
+The correlation matrix above shows the correlation between any two predictors
+in the longley data. In the matrix, many predictors share a correlation near
+1. This implies that these certain predictors are nearly a linear combination
+of each other. From the matrix, we can see 5 pairs of predictors that are
+nearly a linear combination of each other. This suggests that there is collinearity in the model.
+
+## 3b.
+```{r}
+x = scale(model.matrix(l)[,-1])
+apply(x, 2, mean) 
+apply(x, 2, var)
+e = eigen(t(x) %*% x)
+sqrt(e$values[1] / e$values)
+```
+
+
+The output shows condition numbers, k, that are greater than or equal to 30.
+This suggests that there is collinearity in the model. This is in accordance
+with the deduction in part 3a.
+
+## 3c.
+```{r}
+sqrt(round(vif(x),digits=3))
+```
+
+
+1) The standard error for GNP.deflator is ~11.642 times larger than it would've 
+been without collinearity.
+2) The standard error for GNP is ~42.291 times larger than it would've been
+without collinearity.
+3) The standard error for Unemployed is ~5.7982 times larger than it would've 
+been without collinearity.
+4) The standard error for Armed.Forces is ~1.8945 times larger than it would've 
+been without collinearity.
+5) The standard error for Population is ~19.9788 times larger than it would've 
+been without collinearity.
+6) The standard error for Year is ~27.5496 times larger than it would've been
+without collinearity.
+
+## 4a.
+```{r}
+data("cheddar", package = "faraway")
+c <- lm(taste ~ Acetic + H2S + Lactic, data = cheddar)
+plot(c)
+summary(c)
+library(MASS)
+
+plot(x = cheddar$Acetic, y = cheddar$taste)
+lines(supsmu(x = cheddar$Acetic, y = cheddar$taste), col = "red")
+
+plot(x = cheddar$H2S, y = cheddar$taste)
+lines(supsmu(x = cheddar$H2S, y = cheddar$taste), col = "red")
+
+plot(x = cheddar$Lactic, y = cheddar$taste)
+lines(supsmu(x = cheddar$Lactic, y = cheddar$taste), col = "red")
+```
+
+
+From the running lines smoother, we can see there's a linear relationship
+between the response and each predictor. In other words, we have ample linearity
+in the regression model; thus, there's no need to transform x, or the predictor
+values. We would transform the predictors if there was a lack of linearity in 
+the model. This is not the case, so no transformations of predictors are suggested.
+
+## 4b.
+```{r}
+library(MASS)
+library(dplyr)
+bc <- boxcox(c)
+lambda <- bc$x[which.max(bc$y)]
+lambda # lambda = 2/3 is optimal transformation
+# remodel with transformation
+#compare the transformed lm with un-transformed lm
+c_trans <- lm(sqrt(taste) ~ Acetic + H2S + Lactic, data = cheddar) #transformed
+summary(c_trans)
+```
+
+
+Upon using a Box-Cox power transformation, the output lambda value is 2/3.
+Rounded to the nearest half, the lambda value is 1/2. Upon transforming y into
+y^1/2 or sqrt(y), our R-squared decreases from 0.6518 to 0.6266. Transforming y
+into sqrt(y) did not improve the fit. It would be reasonable to leave the 
+response untransformed since the untransformed model had a higher R-squared than
+the transformed model.
+
+## 4c.
+```{r}
+#re-fitting additive model using optimal transformation value
+c_trans_refit_x <- lm(sqrt(taste) ~ Acetic + H2S + Lactic, data = cheddar)
+plot(c_trans_refit_x)
+summary(c_trans_refit_x)
+
+#first predictor transformation trial
+trans_1 <- lm(sqrt(taste) ~ log(Acetic) + log(H2S) + log(Lactic), data = cheddar)
+summary(trans_1)
+plot(trans_1)
+```
+
+
+Upon transforming the predictors into log(x), the R-squared jumped from 0.5897
+to 0.6325. The log(x) transformation improved the model's fit. These new results
+make a difference to the transformations suggested in part 4a. The log(x) 
+predictor transformation improved the regression, whereas there were no 
+predictor transformations suggested in part 4a.
+
+Common predictor transformations such as x^2 and 1/x yielded R-squared values
+less than 0.6325. Therefore, the log(x) transformation improved the regression's
+fit the best. Transformation trials that yielded a lower R-squared were omitted
+from the output.
+
+
