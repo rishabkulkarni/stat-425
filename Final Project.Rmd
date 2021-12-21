@@ -1,5 +1,5 @@
 ---
-title: "FinalProject_Group60"
+title: "Final Project"
 author: "Rishab Kulkarni"
 date: "12/1/2021"
 output:
