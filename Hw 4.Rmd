@@ -1,0 +1,274 @@
+---
+title: "Hw 4"
+author: "Rishab Kulkarni"
+date: "11/4/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(leaps)
+library(ggplot2)
+library(tidyverse)
+```
+
+## 1a.
+```{r}
+# backwards elimination
+data("prostate", package = "faraway")
+m <- lm(lpsa ~ ., data = prostate)
+summary(m)
+```
+
+```{r}
+# begin removing predictors based on p-value
+m <- update (m,.~. - gleason)
+summary(m)
+```
+
+```{r}
+m <- update (m,.~. - lcp)
+summary(m)
+```
+
+```{r}
+m <- update (m,.~. - pgg45)
+summary(m)
+```
+
+```{r}
+m <- update (m,.~. - age)
+summary(m)
+```
+
+```{r}
+m <- update (m,.~. - lbph)
+summary(m)
+```
+
+Upon using backwards elimination, this is the best model. The backwards
+elimination method removed the gleason, lcp, pgg45, and lbph predictors. The
+best model contains the lcavol, lweight, and svi predictors all of which are
+significant predictors.
+
+## 1b.
+```{r}
+# AIC
+step(m,direction="both")
+```
+
+## 1c.
+```{r}
+# Adjusted R-squared
+r <- regsubsets(lpsa ~., data = prostate)
+rs = summary(r)
+rs$which[which.max(rs$adjr2),]
+```
+
+Upon using the adjusted R-squared method, the best model has lcavol, lweight,
+age, lbph, svi, lcp, and pgg45 as predictors. Gleason is the only predictor
+removed from the model.
+
+## 1b.
+```{r}
+# alternative solution to part 1b using rs object
+rs$which[which.min(rs$bic),]
+```
+
+Upon using the AIC/BIC method, the best model has lcavol, lweight, and svi
+as predictors. This is in accordance with the results from the backwards
+elimination method used in part 1a.
+
+## 1d.
+```{r}
+# Mallows Cp
+rs$which[which.min(rs$cp),]
+```
+
+Upon using the Mallows Cp method, the best model has lcavol, lweight, lbph, and svi as predictors.
+
+```{r}
+# finding best model out of all methods
+backwards_elim<-lm(lpsa~lcavol+lweight+svi,data=prostate)
+aic<-lm(lpsa~lcavol+lweight+age+lbph+svi+lcp+pgg45,data=prostate)
+mallows_cp<-lm(lpsa~lcavol+lweight+lbph+svi,data=prostate)
+
+summary(backwards_elim)
+summary(aic)
+summary(mallows_cp)
+```
+
+The highest R-squared value corresponds to the Adjusted R-squared model, where
+only gleason was removed as a predictor. Therefore, the best model has all the
+predictors except for gleason.
+
+## 2. 
+```{r}
+library(splines)
+funky<-function(x) sin(2*pi*x^3)^3
+x<-seq(0,1,by=0.01)[-1]
+y<-funky(x) + 0.1*rnorm(100)
+matplot(x,cbind(y,funky(x)),type="pl",ylab="y",pch=20, lty=1, col=1)
+```
+
+## 2a.
+```{r}
+library(splines)
+n=100
+m=12
+myknots= 2*(1:m)/(m+1)
+myknots 
+
+F=bs(x,knots=myknots, intercept=TRUE)
+dim(F)
+
+# regression splines
+mydf = m+4; 
+tmpdata = data.frame(t = rep(1:n, mydf),
+                     basisfunc=as.vector(F), 
+                     type=as.factor(rep(1:mydf, each=n)))
+ggplot(tmpdata, aes(x=t, y=basisfunc, color=type)) + 
+  geom_path()
+
+# displaying fit on top of the data
+fit<-bs(x,knots=myknots)
+fit_lm<-lm(y~fit-1)
+plot(x,y,ylim=c(-0.5,1))
+lines(spline(x, predict(fit_lm)),col="red",lty=1)
+```
+
+## 2b.
+```{r}
+AIC(fit_lm)
+```
+
+## 2c.
+```{r}
+summary(fit_lm)$adj.r.squared
+```
+
+## 2d.
+```{r}
+AIC<-vector(length=18)
+df<-7:24
+index=1
+for(tmp_knots in 3:20){
+  my_tmp_knots=2*(1:tmp_knots)/(tmp_knots+1)
+  tmp_fit<-bs(x,knots=my_tmp_knots)
+  tmp_fit_lm<-lm(y~tmp_fit-1)
+  AIC[index]<-AIC(tmp_fit_lm)
+  index=index+1
+}
+plot(AIC~df)
+```
+
+The plot shows that with more degrees of freedom, the lower the AIC. As the sample size and degrees of freedom increase, the model's variance decreases which improves the model's fit. Similarly, the lower the AIC, the better the model's fit. As we can see from the plot, as the degrees of freedom increase, the AIC decreases. Accordingly, the best model would be the one with 22 degrees of freedom or 18 knots.
+
+## 2e.
+```{r}
+# plotting selected model on data
+library(splines)
+m=18
+myknots= 2*(1:m)/(m+1)
+fit_sel<-bs(x,knots=myknots)
+fit_sel_lm<-lm(y~fit_sel-1)
+plot(x,y,ylim=c(-0.5,1))
+lines(spline(x, predict(fit_sel_lm)),col="red",lty=1)
+
+# AIC and Adjusted R-squared of model
+AIC(fit_sel_lm)
+summary(fit_sel_lm)$adj.r.squared
+```
+
+
+## 3a.
+```{r}
+# plotting wealth as function of age
+data("fortune",package="faraway")
+gg <- ggplot(fortune, aes(x=age,y=wealth)) + 
+  geom_point(aes(col=region),na.rm=TRUE) + 
+  geom_smooth(method="loess") + 
+  labs(subtitle="Age vs. Wealth", 
+       y="Wealth", 
+       x="Age", 
+       title="Scatterplot")
+plot(gg)
+```
+
+The scatter plot shows no linear trend between age and wealth. Although some larger age values correspond to larger wealth values, the plot shows no ample linearity to conclude any correlation.
+
+```{r}
+# extra comments on part 3a.
+w<-lm(wealth~age,data=fortune)
+plot(w)
+plot(fortune$wealth~fortune$age)
+```
+
+The scatterplot of wealth as a function of age shows non-linearity. The residuals vs. fitted plots show no trend, which implies constant variance in the model. Also, the Q-Q plot implies some normality in the model. 
+
+## 3b.
+```{r}
+# separate panel for each region
+gg <- ggplot(fortune, aes(x=age, y=wealth)) + 
+  geom_point(aes(col=region),na.rm = TRUE) + 
+  geom_smooth(method="loess") + 
+  labs(subtitle="Age vs. Wealth", 
+       y="Wealth", 
+       x="Age", 
+       title="Scatterplot") +
+  facet_wrap(~region)
+plot(gg)
+```
+
+## 3c.
+```{r}
+# transforming response with Box-Cox
+f<-lm(wealth~age,data=fortune)
+b<-boxcox(f)
+lambda<-b$x[which.max(b$y)]
+lambda
+```
+
+Upon transforming the response with the Box-Cox power transformation, the 
+optimal lambda value = -0.787878. Rounded to the nearest half, the lambda value is -1. This means that y^-1 may be an appropriate transformation on the response.
+
+```{r}
+# refitting with y^-1
+f_trans <- lm(wealth^-1~age,data=fortune)
+plot(f_trans)
+plot(fortune$wealth^-1~fortune$age)
+
+summary(f)
+summary(f_trans)
+```
+
+The Box-Cox transformation did not sufficiently remedy the non-linearity. However, homoscedasticity and normality remain. Also, the R-squared slightly increased which means the transformation slightly improved the model's fit. The F-statistic p-value also decreased in the transformed model.
+
+## 3d.
+```{r}
+fortune_dropna<-fortune[-c(104,132,141,187,192,231,232),] # omitting rows with null values
+age_region<-lm(wealth~age+region,data=fortune_dropna) # age & region as predictors
+anova(f,age_region)
+```
+
+Upon using sequential ANOVA, the p-value is 0.1383 which is greater than the
+alpha level 0.05. Thus, we fail to reject the null hypothesis that Model 2 is
+a better fit. We have sufficient evidence that suggests Model 1 with age as 
+the only predictor is the best model of the two.
+
+## 3e.
+```{r}
+n=232
+f_cooks<-cooks.distance(f)
+unusual_obs<-as.numeric(names(f_cooks)[(f_cooks>(4/n))])
+outliers_removed<-fortune[-unusual_obs,]
+
+f_refit<-lm(wealth~age,data=outliers_removed)
+plot(f_refit)
+```
+
+After removing unusual observations and refitting the model, the R-squared and linearity slightly increased. Thus, removing the outliers improved the model's fit. Non-linearity remains after removing the outliers, but is less than the non-linearity present in the model with outliers.
+
