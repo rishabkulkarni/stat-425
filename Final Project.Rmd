@@ -55,9 +55,9 @@ distance to the nearest MRT station and housing price of unit area. This is intu
 are expected to drop as the distance to the nearest MRT station increases. In other words, there is more 
 demand for houses close to the MRT station; thus, these houses will have a higher price of unit area. The 
 plots for X5 and X6 show no correlation between latitude/longitude and housing price of unit area. The 
-numerical summaries show that there is an unusual observation in the distance to the nearest MRT station: 6488.02. 
-This point is much larger than the average and median distance to the nearest MRT station. The response also 
-has an unusual observation, 117.50, which is further from the other observations in the response.
+numerical summaries show that there is an unusual observation in the distance to the nearest MRT station: 
+6488.02. This point is much larger than the average and median distance to the nearest MRT station. The 
+response also has an unusual observation, 117.50, which is further from the other observations in the response.
 
 
 ```{r}
