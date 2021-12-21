@@ -1,2 +1,2 @@
 # stat425
-Statistical Modeling I
+Statistical Modeling 
