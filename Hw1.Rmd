@@ -1,5 +1,5 @@
 ---
-title: "HW1"
+title: "HW 1"
 author: "Rishab Kulkarni"
 date: "9/5/2021"
 output:
