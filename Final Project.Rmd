@@ -1,0 +1,351 @@
+---
+title: "FinalProject_Group60"
+author: "Rishab Kulkarni"
+date: "12/1/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+The objective of this project is to construct and decipher two effective models 
+of housing prices per unit area using predictor variables from the Real Estate 
+Valuation data set. This project will compare both models’ prediction errors and 
+choose the better fit for the real estate valuation data. The idea behind this 
+project is to apply modeling techniques and evaluation metrics to real-life data
+sets and draw conclusions regarding the models’ fits of the data. The Real 
+Estate Valuation data set is associated with “Applied Soft Computing”. The data 
+was provided via an Excel spreadsheet.
+
+```{r}
+library(readxl)
+library(Hmisc)
+df <- read_excel("Copy of Real_estate_valuation_data_set.xlsx")
+
+# seventh predictor X7
+df$`X7 transaction month`<-round(df$`X1 transaction date`%%1*12)
+# df
+
+# histogram for each predictor
+# looking at the histogram, months are not significant
+# hist.data.frame(df)
+
+# numerical summaries
+sum <- lapply(df, summary)
+# sum
+
+par(mfrow=c(2,2))
+plot(df$`Y house price of unit area`~.,df)
+```
+
+# Exploratory Data Analysis
+
+X1 and X7 are categorical variables, whereas X2, X3, X4, X5, and X6 are numerical variables. The response is also numerical. The above graphical displays show each predictor variable plotted against the response, housing price of unit area. The No. predictor is only the observation number, so we will exclude this from our data analysis. The plots show that number of convenience stores and transaction month are not significant in predicting the response. The plot for X2 shows no correlation between house age and housing price of unit area. The plot for X3 shows a negative correlation between distance to the nearest MRT station and housing price of unit area. This is intuitive as housing prices are expected to drop as the distance to the nearest MRT station increases. In other words, there is more demand for houses close to the MRT station; thus, these houses will have a higher price of unit area. The plots for X5 and X6 show no correlation between latitude/longitude and housing price of unit area. The numerical summaries show that there is an unusual observation in the distance to the nearest MRT station: 6488.02. This point is much larger than the average and median distance to the nearest MRT station. The response also has an unusual observation, 117.50, which is further from the other observations in the response.
+
+
+```{r}
+set.seed(123)
+
+# creating train and test data
+# train ~ 0.8, test ~ 0.2
+s <- floor(0.80 * nrow(df))
+ind <- sample(seq_len(nrow(df)),size=s)
+train<- df[ind,]
+test<- df[-ind,]
+
+# mlr
+m <- lm(train$`Y house price of unit area`~., train)
+summary(m)
+
+y <- df$`Y house price of unit area`
+
+# Plot numerical predictors against response
+
+par(mfrow=c(2,2))
+
+plot(df$`X2 house age`, y)
+plot(df$`X3 distance to the nearest MRT station`, y)
+plot(df$`X5 latitude`, y)
+plot(df$`X6 longitude`, y)
+
+par(mfrow=c(2,2))
+plot(m)
+```
+
+The multiple linear regression shows X1, X2, X3, X4, and X5 as significant
+predictors whereas X6 and X7 are insignificant.
+
+# Model Diagnostics
+The residuals v. fitted graph shows no apparent trend, so we can claim there
+is homoscedasticity or constant variance in the model. The Normal Q-Q plot
+shows there is ample normality in the model. However, there is much
+non-linearity in the model. The plots of each numerical predictor against
+the response show no linear trend. An appropriate remedy would be
+transformations of the predictors. The Leverage v. standardized
+residuals graph shows 304 as near but not past the Cook's distance dashed
+line, and no other points cross the dashed line. Thus, we can claim that
+there are no unusual observations in the mlr model.
+
+Variable selection methods can improve the model's fit.
+
+```{r}
+# AIC method
+step(m)
+```
+
+The AIC/BIC variable selection method chose X1, X2, X3, X4, and X5 as
+significant predictors, leaving X6 and X7 out. 
+
+Another variable selection method we can use is Adjusted R-squared.
+
+```{r}
+# Adjusted R-squared method
+library(leaps)
+
+r<- regsubsets(train$`Y house price of unit area`~.,train)
+rs<- summary(r)
+rs$which[which.max(rs$adjr2),]
+```
+
+The Adjusted R-squared variable selection method chose X1, X2, X3, X4, and X5
+as significant predictors, leaving X6 and X7 out again.
+
+The "simple" model will have X1, X2, X3, X4, and X5 as predictors.
+
+```{r}
+# fitting mlr model with X1 - X5 as predictors
+
+# excluding X6 and X7 from mlr model
+
+m_opt <- lm(`Y house price of unit area` ~. -`X6 longitude`-`X7 transaction month`,train)
+# summary(m_opt)
+
+```
+
+# Methodology
+
+In simple linear reg., we use one predictor variable x to predict a response
+variable y. Multiple linear regression is an extension of simple linear 
+regression where we use several predictor variables to predict a response 
+variable y. The simple linear regression form would be y = b_0 + b_1x, whereas 
+the multiple linear regression form would be y = b_0 + b_1x + b_2x2 + b_3x_3 
+and so on. The values b_1, b_2, and b_3 are the coefficients for the predictors 
+x, x2, and x3, respectively. The b_0 is the intercept. Multiple linear 
+regression models are great for predicting a response variable y, given 
+multiple predictor variables.
+
+# Implementation 
+
+The implementation of multiple linear reg. models involves use of the
+lm() function, which is used for linear models. The parameters are the
+formula, followed by the respective data set. The formula follows the form
+y ~ x + x1 + x2 + x3 + ... in the case of multiple linear reg. where 
+x1, x2, and x3 are the predictor variables. In case of a simple linear
+reg., the formula follows the form y ~ x, where x is the sole predictor 
+variable. 
+
+R has a summary() function, which displays the significance of
+each predictor; this significance is determined by a t-test for each
+predictor: The null hypothesis is that the predictor is not significant,
+and the predictor coefficient equals zero. The alternative hypothesis is
+that the predictor is significant, and the predictor coefficient is not
+equal to zero. If we're using a significance alpha level of 0.05, then a
+p-value less than 0.05 rejects the null hypothesis, indicating a 
+significant predictor. Conversely, a p-value greater than 0.05 fails to
+reject the null hypothesis, indicating a non-significant predictor.
+
+The summary() output also shows an adjusted R-squared value, which 
+measures how good of a fit the model is. In other words, how much of
+the variance in the response variable is explained and/or accounted 
+for by the predictor variables. A high adjusted R-squared indicates a
+good fit, whereas a low adjusted R-squared indicates a poor fit. A high
+adjusted R-squared despite non-significant predictors is a common
+symptom of collinearity among predictors in the model. Collinearity
+can be remedied through shrinkage methods.
+
+```{r}
+# make predictions using test data, report prediction errors.
+
+# linear reg. predictions
+data.frame(predict(m_opt, test))
+
+# linear reg. prediction errors
+linear_error <- test$`Y house price of unit area`-predict(m_opt,test)
+data.frame(linear_error)
+
+# reporting linear reg. prediction errors
+linear_error
+```
+
+```{r}
+# Ridge regression
+library(MASS)
+
+ridge_reg <- lm.ridge(`Y house price of unit area` ~.,
+                    train, lambda = seq(0, 50, len= 101))
+lambda=which.min(ridge_reg$GCV)
+
+plot(ridge_reg$lambda, ridge_reg$GCV)
+abline(v=15.0)
+
+# ridge regression predictions, using test data
+ridge_pred <- cbind(1,as.matrix(test[,-8]))%*%coef(ridge_reg)[31,]
+data.frame(ridge_pred)
+
+# ridge regression prediction errors
+ridge_error <- test$`Y house price of unit area`-ridge_pred
+data.frame(ridge_error)
+
+# compare linear and ridge model's prediction errors
+comp <- cbind(linear_error, ridge_error)
+colnames(comp) <- c("Linear Reg.Prediction Errors",
+                    "Ridge Reg.Prediction Errors")
+data.frame(comp)
+```
+
+# Methodology
+
+Ridge regression is used when there is collinearity among predictors, but
+isn't limited to this condition. The MASS library has a function lm.ridge, 
+which can be used for ridge regression models. The use of ridge regression 
+involves lambda or a t-value. The lambda or t-value parameter is chosen to
+produce estimations of predictor coefficients. The lambda or t-value is
+chosen through generalized cross-validation (GCV), which is similar to
+cross-validation (CV). The optimal lambda or t-value that minimizes the 
+generalized cross-validation error is used in the ridge regression model.
+The ridge regression estimates are found from (X^TX + lambda*I)^-1X^Ty. 
+It's important to note that ridge regression coefficient estimates are 
+biased.
+
+# Implementation 
+
+As mentioned, the MASS library contains a function lm.ridge, which can be 
+used for ridge regression. The optimal lambda value is derived by extracting
+the lambda value that minimizes the GCV error, using the which.min() function.
+The which.min() function finds the lambda value that has the lowest GCV 
+error and returns this value. The graphical display shows the chosen lambda
+value and its minimal GCV error.
+
+Now building PCA regression model..
+
+```{r}
+# PCA regression
+library(pls)
+
+# fit PCR model
+pcr_reg <- pcr(train$`Y house price of unit area`~.,
+               data=train, scale=TRUE, validation="CV")
+summary(pcr_reg)
+
+# PCR regression predictions, using test data
+# using 6 PCs ~ explains 91.45% variance in response 
+pcr_pred <- predict(pcr_reg, test, ncomp=6)
+data.frame(pcr_pred)
+
+# PCR prediction errors
+pcr_error <- test$`Y house price of unit area`-pcr_pred
+data.frame(pcr_error)
+
+# compare linear and PCR model's prediction errors
+comp2 <- cbind(linear_error, pcr_error)
+colnames(comp2) <- c("Linear Reg.Prediction Errors",
+                     "PCR Reg.Prediction Errors")
+data.frame(comp2)
+```
+
+# Methodology
+
+Principal components regression is used for multicollinearity and/or 
+dimensionality reduction in the predictors space. Dimensionality reduction
+in the predictor space is preferred when there are too many predictor
+variables. Instead of Y ~ X, we use Y ~ Z, where Z = XU; X is the design
+matrix of the predictors and U is the rotation matrix. The corresponding 
+Z is a rotated form of the data where the principal components are orthogonal.
+Each principal component is a linear combination of predictor variables
+x1, x2, x3, etc. The number of principal components or PCs we use for the
+PCR model is dependent on how much data variation the PCs cover. The scree
+plot shows the number of PCs against its respective standard deviation. 
+A rule of thumb with scree plots is to look for the "elbow" or point where
+the slope suddenly changes. The standard way is to select the number of PCs
+that cover 90% of the variation in the data. In other words, we select the
+number of PCs where the % variance explained in the data crosses 90%.
+
+# Implementation
+
+R has the pls library that contains the pcr() function, which can be used
+for PCR regression models. The PCR regression is made from the pcr() 
+function, with scale = TRUE and validation = "CV" as extra parameters.
+The summary() function on the PCR regression model object shows us that
+6 PCs are needed to explain over 90% variance in the data. Then, we get
+the predicted values using the predict() function with the PCR regression
+model object, test data, and optimal number of PCs as parameters.
+
+```{r}
+# comparing mean-squared error of all models
+library(Metrics)
+
+# linear model mse
+mse(predict(m_opt, test), test$`Y house price of unit area`)
+
+# ridge model mse
+mse(ridge_pred, test$`Y house price of unit area`)
+
+# pcr model mse
+mse(pcr_pred, test$`Y house price of unit area`)
+```
+
+# Conclusion
+
+The standard linear model with all predictors had normality and 
+homoscedasticity; however, there was non-linearity. This condition
+can be remedied by transforming the predictors. Nevertheless, we
+used variable selection methods, such as AIC and Adjusted R-squared 
+to obtain the optimal model.This optimal model had significant 
+predictors X1, X2, X3, X4, and X5. Insignificant predictors X6 
+and X7 were omitted from the simple mlr model.
+
+The AIC method aims to minimize the AIC value; it keeps removing
+insignificant predictors until the AIC value can't be reduced
+any more. The final model associated with the minimized AIC
+value is the optimal model. The Adjusted R-squared method looks
+at the adjusted R-squared, which is a measure of how well the 
+model fits the data. This method runs models with all predictor
+combinations and returns the model with the largest R-squared.
+This would be the optimal model. Both the AIC and Adjusted
+R-squared methods returned the same model with X1, X2, X3, X4,
+and X5 as predictors. This model was used as the simple model.
+
+We used train/test/split to compute prediction errors of the
+models. We created train and test data to prevent overfitting
+in our model. If we exclusively used the whole data, our 
+model would overfit to it, rendering it ineffective for 
+predictions using external data. By creating training data
+for regression and testing data for prediction, we can
+ensure out-of-sample accuracy in our model. We can find the
+prediction errors by subtracting the predicted value from
+the true values in the testing data.
+
+We built a ridge regression model, and compiled predicted
+values from the model. Then, the prediction errors were 
+derived by subtracting these predicted values from the 
+actual values in the test data. As shown by the mean squared
+errors, the ridge regression model's prediction errors 
+were on average, larger than the linear model's prediction 
+errors. Thus, the linear model's a better fit.
+
+We built a PCR and derived predicted values off the test
+data.Then, we got the errors by subtracting these values
+from the true values in the test data.The PCR model's 
+prediction errors were the largest of the three. The linear
+model remains the best,preferred fit.
+
+The impact of this project's analysis is a means of 
+predicting the response, housing price of unit area. 
+The analysis enables us to use a regression model that
+predicts housing prices. This model can be used to predict
+housing prices for new observation points, which would
+be external data, akin to the test data.
