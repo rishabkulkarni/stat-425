@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
+
 The objective of this project is to construct and decipher two effective models 
 of housing prices per unit area using predictor variables from the Real Estate 
 Valuation data set. This project will compare both models’ prediction errors and 
@@ -44,7 +45,19 @@ plot(df$`Y house price of unit area`~.,df)
 
 # Exploratory Data Analysis
 
-X1 and X7 are categorical variables, whereas X2, X3, X4, X5, and X6 are numerical variables. The response is also numerical. The above graphical displays show each predictor variable plotted against the response, housing price of unit area. The No. predictor is only the observation number, so we will exclude this from our data analysis. The plots show that number of convenience stores and transaction month are not significant in predicting the response. The plot for X2 shows no correlation between house age and housing price of unit area. The plot for X3 shows a negative correlation between distance to the nearest MRT station and housing price of unit area. This is intuitive as housing prices are expected to drop as the distance to the nearest MRT station increases. In other words, there is more demand for houses close to the MRT station; thus, these houses will have a higher price of unit area. The plots for X5 and X6 show no correlation between latitude/longitude and housing price of unit area. The numerical summaries show that there is an unusual observation in the distance to the nearest MRT station: 6488.02. This point is much larger than the average and median distance to the nearest MRT station. The response also has an unusual observation, 117.50, which is further from the other observations in the response.
+X1 and X7 are categorical variables, whereas X2, X3, X4, X5, and X6 are numerical variables. 
+The response is also numerical. The above graphical displays show each predictor variable plotted 
+against the response, housing price of unit area. The No. predictor is only the observation number, 
+so we will exclude this from our data analysis. The plots show that number of convenience stores 
+and transaction month are not significant in predicting the response. The plot for X2 shows no correlation 
+between house age and housing price of unit area. The plot for X3 shows a negative correlation between 
+distance to the nearest MRT station and housing price of unit area. This is intuitive as housing prices 
+are expected to drop as the distance to the nearest MRT station increases. In other words, there is more 
+demand for houses close to the MRT station; thus, these houses will have a higher price of unit area. The 
+plots for X5 and X6 show no correlation between latitude/longitude and housing price of unit area. The 
+numerical summaries show that there is an unusual observation in the distance to the nearest MRT station: 6488.02. 
+This point is much larger than the average and median distance to the nearest MRT station. The response also 
+has an unusual observation, 117.50, which is further from the other observations in the response.
 
 
 ```{r}
