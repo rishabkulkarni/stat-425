@@ -93,6 +93,7 @@ The multiple linear regression shows X1, X2, X3, X4, and X5 as significant
 predictors whereas X6 and X7 are insignificant.
 
 # Model Diagnostics
+
 The residuals v. fitted graph shows no apparent trend, so we can claim there
 is homoscedasticity or constant variance in the model. The Normal Q-Q plot
 shows there is ample normality in the model. However, there is much
