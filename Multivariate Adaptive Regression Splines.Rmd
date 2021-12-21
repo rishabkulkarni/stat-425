@@ -1,0 +1,187 @@
+---
+title: "Multivariate Adaptive Regression Splines"
+author: "Rishab Kulkarni"
+date: "12/8/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readxl)
+
+df <- read_excel("Copy of Real_estate_valuation_data_set.xlsx")
+df
+```
+
+```{r}
+set.seed(123)
+
+# creating training and testing data for predictions
+
+s <- floor(0.80 * nrow(df))
+ind <- sample(seq_len(nrow(df)), size = s)
+train <- df[ind,]
+test <- df[-ind,]
+
+library(earth)
+
+# Fitting MARS model
+
+mars <- earth(`Y house price of unit area`~`X5 latitude`+`X6 longitude`, train)
+
+
+plot(mars, which = 1)
+
+# MARS model predictions
+mars_pred <- predict(mars, test[c(6, 7)])
+
+# MARS model prediction errors
+mars_error <- test$`Y house price of unit area`-mars_pred
+
+library(Metrics)
+
+# Fitting MLR model with X5 and X6 as predictors
+
+m <- lm(`Y house price of unit area`~`X5 latitude`+`X6 longitude`, train)
+
+# MLR predictions
+m_pred <- predict(m, test[c(6, 7)])
+
+# MLR prediction errors
+m_error <- test$`Y house price of unit area`-m_pred
+
+# MLR vs. MARS predictions
+p <- cbind(m_pred, mars_pred)
+colnames(p) <- c("MLR Predictions",
+                    "MARS Predictions")
+data.frame(p)
+
+# MLR vs. MARS prediction errors
+e <- cbind(m_error, mars_error)
+colnames(e) <- c("MLR Prediction Errors",
+                    "MARS Prediction Errors")
+data.frame(e)
+
+# MLR vs. MARS root mean-squared error
+r <- cbind(rmse(m_pred, test$`Y house price of unit area`),
+           rmse(mars_pred, test$`Y house price of unit area`))
+colnames(r) <- c("MLR RMSE", "MARS RMSE")
+data.frame(r)
+
+
+```
+
+# Introduction
+
+This semester, we dealt with univariate regression splines where we have
+one predictor and one response. MARS models are common non-parametric regression
+techniques for nonlinear data and are often used with big data. The objective 
+of this project is to fit a multivariate adaptive regression spline (MARS) where 
+we have two predictors (X5 and X6) and response, house price of unit area. This 
+project will compare the predictions and prediction errors of both a multiple 
+linear regression and MARS model. The notion behind this project is to fit a 
+MARS model using two predictors from the Real Estate Valuation data associated 
+with the article "Applied Soft Computing". The data was provided through an 
+Excel spreadsheet. This project will apply evaluation metrics to draw 
+conclusions on the MARS model's efficiency in predicting the response. This 
+project will also review the applications and limitations of the MARS model.
+
+
+# Methodology
+
+Although common, the disadvantage of linear modeling is that it assumes a
+linear relationship between the predictors and response. Often times, this
+is not the case and there is a non-linear relationship. Non-linear
+relationships are usually modeled with non-parametric regression methods, 
+such as kernel estimation and regression splines. In this project, we used
+multivariate adaptive regression splines (MARS) to model the real estate 
+valuation data. MARS models are effective when dealing with nonlinear data.
+
+MARS models are essentially piece-wise linear models. The MARS model cuts 
+the predictor space in segments, or knots. In each segment or between the
+assigned knots, the MARS model creates a linear regression model using the
+predictors. The MARS algorithm iterates through predictor values and finds 
+a value where it fits a linear regression to the left and right of the value.
+The MARS model fits a linear model y = b_0 + b_1x, where x is the hinge 
+function h(x-a), and a is the predictor value.
+
+As the MARS model uses more predictors, there will be more hinge functions 
+between hinge points. This is cause for an overfitted model, which has meager 
+predictive capability for new observations/data. To curb overfitting and limit 
+many hinge functions, we use generalized cross validation (GCV). We choose 
+the number of features that corresponds to the minimum mean-squared error. 
+The MARS algorithm uses GCV to select the optimal number of parameters to use 
+in the model.
+
+The MARS model uses basis functions from predictors, commonly in the form of
+hinge functions. MARS models create hinge functions for combinations of
+features and their values of the form max(0, x-c), where x is our predictor
+and c is the predictor value where there is an assigned knot. As mentioned
+earlier, hinge functions are piecewise linear functions that model each
+cut up portion of the data. The MARS model creates a hinge function 
+max(0, c-x) which returns 0 when the predictor value is less than c and a
+hinge function max(0, x-c) that returns a linear function when x exceeds c.
+The two hinge functions can be thought of as mirror hinge functions.
+
+Univariate cubic splines use one predictor and the data is cut up into 
+intervals, separated by knots. Unlike MARS models where linear functions are 
+fitted in each interval, cubic functions are fitted in each interval in 
+univariate regression splines. Linear functions are fitted in extreme 
+intervals in natural cubic splines.
+
+# Applications
+
+With the MARS model, we can predict the house price of unit area based on
+the latitude (X5) and longitude (X6). As latitude and longitude represent
+location, our MARS model predicts housing prices based on geographical location.
+Thus, we can predict housing price of unit area from any location by just
+using the latitude and longitude measurements. We can use the MARS model in
+nearby areas and zip codes, since we always have latitude and longitude 
+measurements as predictors. This increases the usage, reliability, and scope 
+of the MARS model. Some of the other predictors, such as X3 and X4 may be 
+subject to much noise and bias, whereas latitude and longitude measurements
+are impartial and unbiased.
+
+However, we cannot apply the MARS model to various regions around the world.
+Even though we only need latitude and longitude measurements, there may be
+hidden factors associated with different regions. As a result, it would be
+good practice to fit separate MARS models for varying regions. Using one
+MARS model for varying regions would lead to under-fitting issues and high
+prediction errors. If we construct MARS models for each varying region, we can
+predict the house price of unit area more efficiently with lower prediction
+errors. 
+
+# Discussion and Conclusions
+
+We must use evaluation metrics to determine which model is a better fit of
+the data. One common approach is root mean-squared error, which is derived
+from a model's prediction errors or residuals. The mlr model has a root mean-
+squared error of 10.3, whereas the MARS model has a root mean-squared error of
+8.45. The MARS model has a lower mean-squared error, which means that it's a
+better fit of the model with X5 and X6 as predictors. 
+
+Again, we cannot overgeneralize our MARS model to varying regions. It would
+be wise to fit separate MARS models for each varying region in order to best
+predict the house price of unit area for that respective region. This allows
+for each MARS model to account for the variation in data for its own region, as
+opposed to just one MARS model attempting to account for the cumulative 
+variation in data for all regions.
+
+# Implementation
+
+The earth() function from the earth library in R executes MARS models. 
+
+I used a train/test/split approach as model predictions were to be made. I fit
+both models using training data, and extracted each model's predictions using
+the predict() function and testing data. Then, I compared their prediction 
+errors and root mean-squared errors.
+
+The rmse() function from the Metrics library in R finds the root mean squared 
+error with the predicted values and actual values as function parameters.
+
