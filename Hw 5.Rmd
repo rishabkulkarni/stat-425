@@ -1,0 +1,220 @@
+---
+title: "Hw 5"
+author: "Rishab Kulkarni"
+date: "12/3/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1.
+```{r}
+library(faraway)
+data("chickwts")
+
+
+w <- aov(weight ~ feed,chickwts)
+summary(w)
+
+# box-plot
+plot(weight ~ feed,chickwts)
+
+```
+# 1a.
+The p-value of the feed variable is 5.94e-10, making feed a significant
+predictor of weights. We can say feed has an impact on weights.Thus,
+there is a difference in chickens' weights based on their feed.
+
+None of the box-plots are the same. This is more evidence that there are
+differences in chickens' weights according to feed.
+
+```{r}
+# plot for model diagnostics
+
+par(mfrow = c(2,2))
+plot(w)
+
+
+```
+
+# 1b.
+The residuals v. fitted values graph shows no apparent trend, so we can
+claim there is homoscedasticity or constant variance in the model. The 
+Normal Q-Q plot shows no major departures from normality, so we can
+conclude there is normality in the model. Observation #54 is close
+to the border of Cook's distance, but doesn't fall outside the dashed
+line.The same goes for observation #68. No other points have this
+condition, which means there are no influential points in the model.
+
+We can double-check for homoscedasticity using Levene's test..
+
+```{r}
+# Levene's test for equality of variance
+
+w_lev<- lm(abs(w$residuals) ~ feed,chickwts)
+summary(w_lev)
+```
+
+The p-value of the F-test is 0.4324. Since this is greater than 0.01,
+there is no evidence of unequal variances. This confirms our earlier
+diagnosis of homoscedasticity.
+
+# 2.
+```{r}
+data("infmort")
+
+
+i<- aov(income ~ region,infmort)
+summary(i)
+
+# box-plot
+plot(income ~ region,infmort)
+
+
+```
+
+The p-value for the region variable is 1.16e-13, making region a
+significant predictor of income. We can say region has an impact on
+income. Thus, income varies with region.
+
+Again, the box-plots are varying. This is more evidence that income
+varies with region.
+
+```{r}
+par(mfrow = c(2,2))
+plot(i)
+```
+
+# 2a.
+The residuals v. fitted values graph shows an apparent trend, so we can
+claim there is no homoscedasticity or constant variance in the model. The
+Normal Q-Q plot shows departures from normality, so we can claim there
+is no normality in the model. The Yugoslavia observation is near the
+border of Cook's distance, but isn't beyond the dashed line. No other
+points have this condition, which means there are no influential points 
+in the model. 
+
+We can double-check for homoscedasticity using Levene's test..
+
+```{r}
+# Levene's test for equality of variances
+
+i_lev <- lm(abs(i$residuals) ~ region,infmort)
+summary(i_lev)
+```
+
+The p-value of the F-test is less than 0.01, which means there is evidence
+of unequal variances. This confirms our earlier diagnosis of unequal
+variances.
+
+```{r}
+# sample mean for each level
+aggregate(income ~ region, infmort, FUN = mean)
+
+# pairwise comparisons
+pairwise.t.test(infmort$income, infmort$region, p.adj="bonferroni")
+
+
+TukeyHSD(i)
+```
+
+# 2b.
+In the table,the p-values less than 0.01 represent region pairs that 
+are different. Thus, the pairs of regions that are different are 
+Europe-Africa, Asia-Europe, and Americas-Europe.
+
+The Tukey HSD test output shows the differences between Europe-Africa,
+Asia-Europe, and Americas-Europe are significant with an adjusted p-value
+of around 0.
+
+Both the pairwise t-test and Tukey HSD test revealed identical results.
+
+Our earlier diagnosis of the model was a lack of normality and unequal
+variances, or heteroscedasticity. An appropriate remedy would be a 
+transformation of the response.
+
+# 2c.
+```{r}
+library(MASS)
+
+i_bc <- boxcox(i)
+lambda <- i_bc$x[which.max(i_bc$y)]
+lambda
+
+# applying transformation
+i_refit <- aov(log(income) ~ region,infmort)
+
+par(mfrow = c(2,2))
+plot(i_refit)
+```
+
+We transformed the response with a box-cox power transformation. The 
+optimal lambda value = -0.1414. Rounded to the nearest half, the optimal
+lambda value = 0. This means a log() transformation of the response may
+improve the model's fit.
+
+After transformation of response, the Normal Q-Q plot shows increased
+normality in the model. Also, there are still no influential observations
+in the model. 
+
+We can check if there's equal variance in the transformed, re-fitted model 
+with the Levene's test..
+
+```{r}
+# Levene's test for equality of variances
+
+i_refit_lev <- lm(abs(i_refit$residuals) ~ region,infmort)
+summary(i_refit_lev)
+```
+
+The p-value of the F-test is greater than 0.01, which means there is
+no evidence of unequal variances in the transformed, re-fitted model.
+The log transformation worked; the homoscedasticity in the original model 
+was remedied.
+
+```{r}
+# comparing p-values of original v. transformed models
+summary(i)
+
+summary(i_refit)
+```
+
+The p-value of region was 1.16e-13 in the original model. After the log 
+transformation, the p-value of region was 7.17e-16. This means that region 
+is a more significant predictor in the transformed model. Thus, the 
+re-fitted model is a better fit than the original model.
+
+```{r}
+data("PlantGrowth")
+
+p <- aov(weight ~ group,PlantGrowth)
+summary(p)
+
+# box-plot
+plot(PlantGrowth$group, PlantGrowth$weight)
+
+# Tukey HSD test
+TukeyHSD(p)
+```
+
+# 3a.
+The levels are ctrl, trt1, and trt2.
+
+The box-plots are varying, implying there may be differences in weight
+between the groups. In the display, the levels' box-plots exhibit varying
+numerical summaries. However, further testing is required to determine if 
+there are indeed differences in weight between the groups.
+
+We can use a Tukey HSD test..
+
+# 3b.
+
+The Tukey HSD test output shows that only the difference between trt1 
+and trt2 is significant with an adjusted p-value of 0.012. The 
+differences trt1-ctrl and trt2-ctrl are non-significant with adjusted
+p-values of 0.391 and 0.198, respectively.
+
