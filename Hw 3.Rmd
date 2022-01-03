@@ -22,7 +22,6 @@ s <- lm(colonies ~ I(log(dose + 1)), data = salmonella)
 s_factor <- lm(colonies ~ 0 + as.factor(log(dose + 1)), data = salmonella)
 anova(s, s_factor) #lack-of-fit test
 ```
-
 The p-value from the lack-of-fit test is 0.1342, which is greater than the alpha
 level 0.05. Therefore, we fail to reject the null hypothesis that there is no 
 lack of fit in the reduced model. We've sufficient evidence that suggests this
